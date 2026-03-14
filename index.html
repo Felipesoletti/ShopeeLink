@@ -341,7 +341,7 @@
               <input type="checkbox" id="filtroNacional" />
               <span class="toggle-slider"></span>
             </label>
-            <span class="toggle-label" style="font-size:12px;color:var(--muted)">Apenas produtos nacionais 🇧🇷</span>
+            <span class="toggle-label" style="font-size:12px;color:var(--muted)">Frete Grátisionais 🇧🇷</span>
           </div>
         </div>
       </div>
@@ -598,10 +598,12 @@
     }
     document.getElementById('alertOfertasError').classList.remove('show');
 
-    const keyword  = document.getElementById('searchInput').value.trim() || 'feminino';
+    const baseKeyword = document.getElementById('searchInput').value.trim() || 'feminino';
+    const freteGratis = document.getElementById('filtroNacional').checked;
+    const keyword  = freteGratis ? baseKeyword + ' frete gratis' : baseKeyword;
     const sortType = parseInt(document.getElementById('sortType').value);
     const limit    = parseInt(document.getElementById('limitOfertas').value);
-    const nacional = document.getElementById('filtroNacional').checked;
+    const nacional = freteGratis;
 
     const btnBusca = document.querySelector('#page-ofertas .btn-pink');
     document.getElementById('spinnerBusca').style.display = 'block';
@@ -629,7 +631,9 @@
             nodes {
               itemId shopId productName
               priceMin priceMax commissionRate priceDiscountRate
-              imageUrl offerLink ratingStar sales shopLocation
+              itemId shopId productName
+              priceMin priceMax commissionRate priceDiscountRate
+              imageUrl offerLink
             }
             pageInfo { hasNextPage }
           }
@@ -645,19 +649,11 @@
       // Log para debug de preco/comissao
       if (allNodes.length) console.log('RAW[0]:', JSON.stringify(allNodes[0]));
 
-      // Filtro envio nacional
+      // Frete grátis: já foi incluído no keyword da busca
       let filtered = allNodes;
-      if (nacional) {
-        const CN_KEYWORDS = ['china', 'cn', 'guangdong', 'guangzhou', 'shenzhen', 'fujian', 'zhejiang'];
-        filtered = allNodes.filter(p => {
-          const loc = (p.shopLocation || '').toLowerCase();
-          if (!loc) return true; // sem info = deixa passar
-          return !CN_KEYWORDS.some(k => loc.includes(k));
-        });
-      }
 
       if (!filtered.length) {
-        container.innerHTML = `<div class="empty-state"><div class="icon">&#128580;</div><p>Nenhum produto encontrado${nacional ? ' com envio nacional' : ''} para "<strong>${keyword}</strong>".</p></div>`;
+        container.innerHTML = `<div class="empty-state"><div class="icon">&#128580;</div><p>Nenhum produto encontrado${nacional ? ' com frete grátis' : ''} para "<strong>${keyword}</strong>".</p></div>`;
         return;
       }
 
@@ -678,8 +674,8 @@
         const orig      = toReal(p.priceMax);
         const comissao  = toComissao(p.commissionRate);
         const desconto  = p.priceDiscountRate ? Math.round(Number(p.priceDiscountRate)) : 0;
-        const loc       = p.shopLocation || '';
-        const isNac     = loc && !['china','cn','guangdong','guangzhou','shenzhen'].some(k => loc.toLowerCase().includes(k));
+        const loc       = '';  // shopLocation not available in API
+        const isNac     = false;  // sem dados de localização disponíveis
         const link      = p.offerLink || '#';
 
         const card = document.createElement('div');
