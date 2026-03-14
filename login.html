@@ -116,7 +116,8 @@
       setStatus('success', '✅ Conectado com sucesso! Redirecionando...');
 
       setTimeout(function() {
-        window.location.href = 'index.html';
+        var base = window.location.href.replace(/\/[^/]*$/, '/');
+      window.location.href = base + 'index.html';
       }, 1000);
 
     } catch(e) {
