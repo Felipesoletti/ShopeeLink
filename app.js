@@ -122,7 +122,7 @@
 
     try {
       // Busca campanhas E lojas em paralelo
-      var qCampanhas = '{ shopeeOfferV2( sortType: 2, page: 1, limit: 100 ) { nodes { commissionRate imageUrl offerLink originalLink offerName offerType periodStartTime periodEndTime } pageInfo { hasNextPage } } }';
+      var qCampanhas = '{ shopeeOfferV2( sortType: 2, page: 1, limit: 50 ) { nodes { commissionRate imageUrl offerLink originalLink offerName offerType periodStartTime periodEndTime } pageInfo { hasNextPage } } }';
       var qLojas     = '{ shopOfferV2( sortType: 2, page: 1, limit: 60 ) { nodes { shopId shopName commissionRate ratingStar shopType imageUrl offerLink periodStartTime periodEndTime } } }';
 
       var results = await Promise.all([
