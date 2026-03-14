@@ -103,53 +103,126 @@
     XLSX.writeFile(wb, 'produtos_selecionados.xlsx');
   }
 
+  // ── Cupons: estado ──
+  var cuponsAtivos = {campanhas: [], lojas: [], hasLoaded: false};
+
+  function switchCuponTab(tab, btn) {
+    document.querySelectorAll('.cupom-nav-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    renderCupons(tab);
+  }
+
   async function buscarCupons() {
-    const appId  = document.getElementById('appId').value.trim();
-    const secret = document.getElementById('secretKey').value.trim();
-    if (!appId || !secret) { alert('Informe o App ID e Secret Key na aba Gerar Links.'); return; }
-    const container = document.getElementById('cuponsContainer');
-    container.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted)">Buscando cup\u00f5ns...</div>';
+    var appId  = document.getElementById('appId').value.trim();
+    var secret = document.getElementById('secretKey').value.trim();
+    if (!appId || !secret) { alert('Sem credenciais. Fa\u00e7a login novamente.'); return; }
+
+    var container = document.getElementById('cuponsContainer');
+    container.innerHTML = '<div class="empty-state"><div style="font-size:32px">&#9203;</div><p>Buscando ofertas oficiais da Shopee...</p></div>';
+
     try {
-      const query = '{ shopeeOfferV2( sortType: 2, page: 1, limit: 40 ) { nodes { commissionRate imageUrl offerLink offerName periodStartTime periodEndTime } } }';
-      const data  = await callAPI(appId, secret, query);
-      const nodes = data && data.data && data.data.shopeeOfferV2 ? data.data.shopeeOfferV2.nodes : [];
-      if (!nodes.length) {
-        container.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted)">Nenhum cup\u00f5m encontrado no momento.</div>';
-        return;
-      }
-      var toComissaoPct = function(v) {
-        if (!v) return null;
-        var n = Number(v);
-        if (n < 1) return (n * 100).toFixed(0) + '%';
-        if (n > 100) return (n / 100).toFixed(0) + '%';
-        return n.toFixed(0) + '%';
-      };
-      var formatDate = function(ts) {
-        return ts ? new Date(ts * 1000).toLocaleDateString('pt-BR') : '';
-      };
-      container.innerHTML = '<div class="cupom-grid" id="cupomGrid"></div>';
-      var grid = document.getElementById('cupomGrid');
-      nodes.forEach(function(node) {
-        var pct      = toComissaoPct(node.commissionRate);
-        var validade = node.periodEndTime ? 'V\u00e1lido at\u00e9 ' + formatDate(node.periodEndTime) : '';
-        var div      = document.createElement('div');
-        div.className = 'cupom-card';
-        var imgHtml   = node.imageUrl ? '<img src="' + node.imageUrl + '" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:4px" />' : '';
-        var pctHtml   = pct ? '<div class="cupom-code">' + pct + ' de comiss\u00e3o</div>' : '';
-        var validHtml = validade ? '<div class="cupom-validade">&#128197; ' + validade + '</div>' : '';
-        var linkSafe  = (node.offerLink || '#').replace(/'/g, '%27');
-        div.innerHTML =
-          imgHtml +
-          '<div class="cupom-desc">' + (node.offerName || 'Oferta Especial') + '</div>' +
-          pctHtml + validHtml +
-          '<div style="display:flex;gap:6px;margin-top:8px">' +
-            '<a href="' + (node.offerLink || '#') + '" target="_blank" class="product-btn product-btn-main" style="flex:1;padding:7px;text-align:center;text-decoration:none;font-size:11px;font-weight:700;border-radius:7px">Ver oferta</a>' +
-            '<button class="copy-btn" onclick="copiarTexto(this.dataset.link,this)" data-link="' + linkSafe + '" style="font-size:11px">Copiar</button>' +
-          '</div>';
-        grid.appendChild(div);
-      });
+      // Busca campanhas E lojas em paralelo
+      var qCampanhas = '{ shopeeOfferV2( sortType: 2, page: 1, limit: 100 ) { nodes { commissionRate imageUrl offerLink originalLink offerName offerType periodStartTime periodEndTime } pageInfo { hasNextPage } } }';
+      var qLojas     = '{ shopOfferV2( sortType: 2, page: 1, limit: 60 ) { nodes { shopId shopName commissionRate ratingStar shopType imageUrl offerLink periodStartTime periodEndTime } } }';
+
+      var results = await Promise.all([
+        callAPI(appId, secret, qCampanhas),
+        callAPI(appId, secret, qLojas)
+      ]);
+
+      cuponsAtivos.campanhas = (results[0] && results[0].data && results[0].data.shopeeOfferV2) ? results[0].data.shopeeOfferV2.nodes || [] : [];
+      cuponsAtivos.lojas     = (results[1] && results[1].data && results[1].data.shopOfferV2)     ? results[1].data.shopOfferV2.nodes    || [] : [];
+      cuponsAtivos.hasLoaded = true;
+
+      // Render UI com abas
+      container.innerHTML =
+        '<div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">' +
+          '<button class="cupom-nav-btn active" onclick="switchCuponTab(&quot;campanhas&quot;,this)">&#128293; Campanhas Shopee <span class="cupom-badge">' + cuponsAtivos.campanhas.length + '</span></button>' +
+          '<button class="cupom-nav-btn" onclick="switchCuponTab(&quot;lojas&quot;,this)">&#127963; Lojas com Comiss\u00e3o <span class="cupom-badge">' + cuponsAtivos.lojas.length + '</span></button>' +
+        '</div>' +
+        '<div id="cupomListContainer"></div>';
+
+      renderCupons('campanhas');
+
     } catch(e) {
-      container.innerHTML = '<div style="text-align:center;padding:32px;color:var(--error)">Erro: ' + e.message + '</div>';
+      container.innerHTML = '<div class="empty-state"><div style="font-size:32px">&#10060;</div><p>Erro: ' + e.message + '</p></div>';
+    }
+  }
+
+  function renderCupons(tipo) {
+    var container = document.getElementById('cupomListContainer');
+    if (!container) return;
+
+    var formatDate = function(ts) { return ts ? new Date(ts * 1000).toLocaleDateString('pt-BR') : ''; };
+    var toComissaoPct = function(v) {
+      if (!v) return null;
+      var n = Number(v);
+      if (n < 1) return (n * 100).toFixed(0) + '%';
+      if (n > 100) return (n / 100).toFixed(0) + '%';
+      return n.toFixed(0) + '%';
+    };
+
+    if (tipo === 'campanhas') {
+      var nodes = cuponsAtivos.campanhas;
+      if (!nodes.length) { container.innerHTML = '<div class="empty-state"><p>Nenhuma campanha ativa no momento.</p></div>'; return; }
+
+      var TIPOS = {1: '&#128196; Cole\u00e7\u00e3o', 2: '&#127991; Categoria'};
+      var html = '<div class="cupom-grid">';
+      nodes.forEach(function(c) {
+        var pct      = toComissaoPct(c.commissionRate);
+        var inicio   = c.periodStartTime ? formatDate(c.periodStartTime) : '';
+        var fim      = c.periodEndTime   ? formatDate(c.periodEndTime)   : '';
+        var periodo  = (inicio && fim) ? inicio + ' \u2013 ' + fim : (fim ? 'At\u00e9 ' + fim : '');
+        var tipo_tag = TIPOS[c.offerType] || '&#127976; Oferta';
+        var link     = (c.offerLink || '#').replace(/"/g, '&quot;');
+        html +=
+          '<div class="cupom-card">' +
+            (c.imageUrl ? '<img src="' + c.imageUrl + '" style="width:100%;height:110px;object-fit:cover;border-radius:8px;margin-bottom:8px" loading="lazy" />' : '') +
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap">' +
+              '<span style="font-size:10px;background:rgba(255,102,51,0.15);color:var(--orange);padding:3px 8px;border-radius:20px;font-weight:700">' + tipo_tag + '</span>' +
+              (pct ? '<span class="cupom-code">' + pct + '</span>' : '') +
+            '</div>' +
+            '<div class="cupom-desc">' + (c.offerName || 'Oferta Especial') + '</div>' +
+            (periodo ? '<div class="cupom-validade">&#128197; ' + periodo + '</div>' : '') +
+            '<div style="display:flex;gap:6px;margin-top:6px">' +
+              '<a href="' + link + '" target="_blank" class="product-btn product-btn-main" style="flex:1;padding:8px;text-align:center;text-decoration:none;font-size:11px;font-weight:700;border-radius:8px">Ver oferta &#8594;</a>' +
+              '<button class="copy-btn" onclick="copiarTexto(this)" data-link="' + link + '" style="font-size:11px">Copiar link</button>' +
+            '</div>' +
+          '</div>';
+      });
+      html += '</div>';
+      container.innerHTML = html;
+
+    } else {
+      var nodes = cuponsAtivos.lojas;
+      if (!nodes.length) { container.innerHTML = '<div class="empty-state"><p>Nenhuma loja com comiss\u00e3o diferenciada encontrada.</p></div>'; return; }
+
+      var SHOP_TYPES = {1: 'Mall', 2: 'Star', 4: 'Star+'};
+      var html = '<div class="cupom-grid">';
+      nodes.forEach(function(loja) {
+        var pct   = toComissaoPct(loja.commissionRate);
+        var stars = loja.ratingStar ? (parseFloat(loja.ratingStar)).toFixed(1) : null;
+        var tipo  = loja.shopType ? (SHOP_TYPES[loja.shopType] || '') : '';
+        var link  = (loja.offerLink || '#').replace(/"/g, '&quot;');
+        var fim   = loja.periodEndTime ? formatDate(loja.periodEndTime) : '';
+        html +=
+          '<div class="cupom-card">' +
+            (loja.imageUrl ? '<img src="' + loja.imageUrl + '" style="width:100%;height:80px;object-fit:contain;background:var(--surface);border-radius:8px;margin-bottom:8px;padding:8px" loading="lazy" />' : '') +
+            '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">' +
+              (tipo ? '<span style="font-size:10px;background:rgba(255,102,51,0.15);color:var(--orange);padding:3px 8px;border-radius:20px;font-weight:700">' + tipo + '</span>' : '') +
+              (stars ? '<span style="font-size:11px;color:#fbbf24">&#9733; ' + stars + '</span>' : '') +
+            '</div>' +
+            '<div class="cupom-desc" style="font-weight:600">' + (loja.shopName || 'Loja') + '</div>' +
+            (pct ? '<div class="cupom-code">' + pct + ' comiss\u00e3o</div>' : '') +
+            (fim ? '<div class="cupom-validade">&#128197; At\u00e9 ' + fim + '</div>' : '') +
+            '<div style="display:flex;gap:6px;margin-top:8px">' +
+              '<a href="' + link + '" target="_blank" class="product-btn product-btn-main" style="flex:1;padding:8px;text-align:center;text-decoration:none;font-size:11px;font-weight:700;border-radius:8px">Ver loja &#8594;</a>' +
+              '<button class="copy-btn" onclick="copiarTexto(this)" data-link="' + link + '" style="font-size:11px">Copiar</button>' +
+            '</div>' +
+          '</div>';
+      });
+      html += '</div>';
+      container.innerHTML = html;
     }
   }
 
