@@ -307,17 +307,15 @@
         <div class="badge" onclick="selectCategoria(this,'cabelo feminino')">💇 Cabelo</div>
       </div>
 
-      <!-- Busca -->
-      <div class="search-row">
-        <input type="text" id="searchInput" placeholder="Buscar produto..." onkeydown="if(event.key==='Enter')buscarOfertas()" />
-        <button class="btn btn-pink" style="width:auto;margin:0;padding:11px 18px" onclick="buscarOfertas()">
-          <div class="spinner" id="spinnerBusca"></div>
-          <span id="btnBuscaText">🔍 Buscar</span>
-        </button>
+      <!-- Campo de busca (sem botão) -->
+      <div style="margin-bottom:14px">
+        <input type="text" id="searchInput" placeholder="Buscar produto feminino..."
+          onkeydown="if(event.key==='Enter')buscarOfertas()"
+          style="width:100%" />
       </div>
 
-      <!-- Filtros -->
-      <div class="filter-grid">
+      <!-- Filtros: ordenar + quantidade + toggles -->
+      <div class="filter-grid" style="margin-bottom:14px">
         <div>
           <label>Ordenar por</label>
           <select id="sortType">
@@ -351,6 +349,53 @@
           </div>
         </div>
       </div>
+
+      <!-- Faixa de preço + botão Buscar -->
+      <div style="display:flex;align-items:flex-end;gap:14px;margin-bottom:18px;flex-wrap:wrap">
+
+        <!-- Faixa de preço -->
+        <div style="flex:1;min-width:220px">
+          <p style="font-size:11px;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin:0 0 10px">Faixa de pre&#231;o</p>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div style="flex:1;background:var(--surface2);border-radius:10px;padding:10px 14px;border:1px solid var(--border)">
+              <p style="font-size:11px;color:var(--muted);margin:0 0 2px">M&#237;nimo</p>
+              <div style="display:flex;align-items:baseline;gap:3px">
+                <span style="font-size:12px;color:var(--muted)">R$</span>
+                <input type="number" id="precoMin" min="0" value="" placeholder="0"
+                  style="background:none;border:none;outline:none;font-size:18px;font-weight:700;color:var(--text);width:70px;padding:0;font-family:'Syne',sans-serif"
+                  oninput="atualizarBarraPreco()" />
+              </div>
+            </div>
+            <div style="width:14px;height:1px;background:var(--border);flex-shrink:0"></div>
+            <div style="flex:1;background:var(--surface2);border-radius:10px;padding:10px 14px;border:1px solid var(--border)">
+              <p style="font-size:11px;color:var(--muted);margin:0 0 2px">M&#225;ximo</p>
+              <div style="display:flex;align-items:baseline;gap:3px">
+                <span style="font-size:12px;color:var(--muted)">R$</span>
+                <input type="number" id="precoMax" min="0" value="" placeholder="&#8734;"
+                  style="background:none;border:none;outline:none;font-size:18px;font-weight:700;color:var(--text);width:70px;padding:0;font-family:'Syne',sans-serif"
+                  oninput="atualizarBarraPreco()" />
+              </div>
+            </div>
+          </div>
+          <div style="position:relative;height:3px;background:var(--border);border-radius:2px;margin:0 4px 6px">
+            <div id="barraPreco" style="position:absolute;height:100%;background:var(--orange);border-radius:2px;left:0%;right:0%"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span id="lblPreco" style="font-size:12px;color:var(--muted)">Qualquer pre&#231;o</span>
+            <button onclick="limparFiltroPreco()" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;font-family:'DM Sans',sans-serif">limpar</button>
+          </div>
+        </div>
+
+        <!-- Botão Buscar alinhado na base -->
+        <button class="btn btn-pink" style="width:auto;margin:0;padding:14px 28px;align-self:flex-end;white-space:nowrap" onclick="buscarOfertas()">
+          <div class="spinner" id="spinnerBusca"></div>
+          <span id="btnBuscaText">&#128269; Buscar ofertas</span>
+        </button>
+
+      </div>
+
+      </div>
+
 
 
       <div class="alert error" id="alertOfertasError">⚠️ <span id="alertOfertasMsg"></span></div>
@@ -566,33 +611,66 @@
     buscarOfertas();
   }
 
-  // Converte preco: API retorna centavos inteiros ex: 2990 = R$29,90
-  function toReal(v) {
+  // Converte preco: retorna número float (reais) ou null
+  function toRealNum(v) {
     if (!v) return null;
     const n = Number(v);
     if (n === 0) return null;
-    // Detecta a magnitude e normaliza para reais
-    // Shopee BR geralmente retorna em centavos (2990 = R$29,90)
-    // Mas pode retornar x100 (299000) ou x100000 (299000000)
-    let reais;
-    if (n >= 10000000) reais = n / 100000;       // 299000000 -> 2990.00
-    else if (n >= 100000) reais = n / 10000;     // 299000 -> 29.90
-    else if (n >= 1000)   reais = n / 100;       // 2990 -> 29.90
-    else if (n >= 10)     reais = n / 10;        // 299 -> 29.9
-    else                  reais = n;
-    return reais.toFixed(2).replace('.', ',');
+    if (n >= 10000000) return n / 100000;
+    if (n >= 100000)   return n / 10000;
+    if (n >= 1000)     return n / 100;
+    if (n >= 10)       return n / 10;
+    return n;
+  }
+  function toReal(v) {
+    const num = toRealNum(v);
+    if (num === null) return null;
+    return num.toFixed(2).replace('.', ',');
   }
 
-  // Comissao: API retorna como decimal ex: 0.12 = 12% ou 12.0 = 12%
-  function toComissao(v) {
+  // Comissao: retorna percentual como float ou null
+  function toComissaoNum(v) {
     if (!v) return null;
     const n = Number(v);
     if (n === 0) return null;
-    let pct;
-    if (n < 1)        pct = n * 100;   // 0.12 -> 12%
-    else if (n > 100) pct = n / 100;   // 1200 -> 12%
-    else              pct = n;          // 12 -> 12%
-    return pct.toFixed(2).replace('.', ',');
+    if (n < 1)        return n * 100;   // 0.12 -> 12
+    if (n > 100)      return n / 100;   // 1200 -> 12
+    return n;                            // 12 -> 12
+  }
+  function toComissao(v) {
+    const num = toComissaoNum(v);
+    if (num === null) return null;
+    return num.toFixed(2).replace('.', ',');
+  }
+
+  function limparFiltroPreco() {
+    document.getElementById('precoMin').value = '';
+    document.getElementById('precoMax').value = '';
+    atualizarBarraPreco();
+  }
+
+  function atualizarBarraPreco() {
+    const mn = parseFloat(document.getElementById('precoMin').value) || 0;
+    const mx = parseFloat(document.getElementById('precoMax').value) || 0;
+    const MAX = 1000;
+    const barra = document.getElementById('barraPreco');
+    const lbl   = document.getElementById('lblPreco');
+    if (!barra || !lbl) return;
+    if (!mn && !mx) {
+      barra.style.left  = '0%';
+      barra.style.right = '0%';
+      lbl.textContent = 'Qualquer preço';
+      return;
+    }
+    const low  = mn || 0;
+    const high = mx || MAX;
+    const pL = Math.min(low  / MAX * 100, 100);
+    const pR = Math.max(100 - high / MAX * 100, 0);
+    barra.style.left  = pL.toFixed(1) + '%';
+    barra.style.right = pR.toFixed(1) + '%';
+    if (mn && mx)       lbl.textContent = 'R$ ' + mn + ' — R$ ' + mx;
+    else if (mn && !mx) lbl.textContent = 'A partir de R$ ' + mn;
+    else if (!mn && mx) lbl.textContent = 'Até R$ ' + mx;
   }
 
   async function buscarOfertas() {
@@ -638,11 +716,9 @@
             ${filtroMall ? ', shopType: [1]' : ''}
           ) {
             nodes {
-              itemId shopId productName
+              itemId shopId productName shopName shopType
               priceMin priceMax commissionRate priceDiscountRate
-              itemId shopId productName
-              priceMin priceMax commissionRate priceDiscountRate
-              imageUrl offerLink shopName shopType
+              imageUrl offerLink
             }
             pageInfo { hasNextPage }
           }
@@ -658,8 +734,14 @@
       // Log para debug de preco/comissao
       if (allNodes.length) console.log('RAW[0]:', JSON.stringify(allNodes[0]));
 
-      // Frete grátis: já foi incluído no keyword da busca
-      let filtered = allNodes;
+      // Filtros client-side: preço
+      const fMin = parseFloat(document.getElementById('precoMin').value) || 0;
+      const fMax = parseFloat(document.getElementById('precoMax').value) || Infinity;
+      let filtered = allNodes.filter(p => {
+        const preco = toRealNum(p.priceMin);
+        if (preco === null) return true; // sem preço = deixa passar
+        return preco >= fMin && preco <= fMax;
+      });
 
       if (!filtered.length) {
         container.innerHTML = `<div class="empty-state"><div class="icon">&#128580;</div><p>Nenhum produto encontrado${nacional ? ' com frete grátis' : ''} para "<strong>${keyword}</strong>".</p></div>`;
@@ -689,10 +771,14 @@
 
         const card = document.createElement('div');
         card.className = 'product-card';
+        const precoNum2   = toRealNum(p.priceMin);
+        const pctNum2     = toComissaoNum(p.commissionRate);
+        const valComissao = (precoNum2 && pctNum2) ? (precoNum2 * pctNum2 / 100).toFixed(2) : null;
+
         card.dataset.link     = link;
         card.dataset.nome     = p.productName || 'Produto';
         card.dataset.preco    = preco ? `R$ ${preco}` : '-';
-        card.dataset.comissao = comissao ? `${comissao}%` : '-';
+        card.dataset.comissao = comissao ? `${comissao}%${valComissao ? ' (R$ ' + valComissao.replace('.',',') + ')' : ''}` : '-';
         card.dataset.img      = p.imageUrl || '';
 
         card.innerHTML = `
@@ -707,7 +793,12 @@
               ${desconto > 0 ? `<span class="product-discount">-${desconto}%</span>` : ''}
             </div>
             <div class="product-meta">
-              ${comissao ? `<span class="product-commission">&#128176; ${comissao}% comiss&#227;o</span>` : ''}
+              ${comissao ? (() => {
+                const precoNum = toRealNum(p.priceMin);
+                const pctNum   = toComissaoNum(p.commissionRate);
+                const valorComissao = (precoNum && pctNum) ? (precoNum * pctNum / 100).toFixed(2).replace('.',',') : null;
+                return `<span class="product-commission">&#128176; ${comissao}% ${valorComissao ? `<span style="color:#86efac">(R$&nbsp;${valorComissao})</span>` : ''}</span>`;
+              })() : ''}
               ${p.shopType === 1 ? `<span class="product-national">&#127963; Mall</span>` : ''}
             </div>
             ${p.shopName ? `<div style="font-size:11px;color:var(--muted);margin-bottom:8px">&#127978; ${p.shopName}</div>` : ''}
