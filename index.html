@@ -362,6 +362,9 @@
   }
 
   // ── API SHOPEE ──
+  // Troque pela URL do seu Cloudflare Worker após o deploy
+  const PROXY_URL = 'https://SEU-WORKER.SEU-USUARIO.workers.dev';
+
   async function gerarLinkAfiliado(appId, secret, linkOriginal) {
     const timestamp = Math.floor(Date.now() / 1000);
     const payload = {
@@ -370,7 +373,7 @@
     };
     const body = JSON.stringify(payload);
     const sig = await sha256(`${appId}${timestamp}${body}${secret}`);
-    const resp = await fetch('https://open-api.affiliate.shopee.com.br/graphql', {
+    const resp = await fetch(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `SHA256 Credential=${appId}, Timestamp=${timestamp}, Signature=${sig}` },
       body
