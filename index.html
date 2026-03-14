@@ -247,7 +247,7 @@
         <div><label>SECRET KEY</label><input type="password" id="secretKey" placeholder="Sua chave secreta" /></div>
       </div>
       <p class="hint">🔒 Suas credenciais ficam apenas no seu navegador e nunca são enviadas a terceiros.</p>
-    <input type="hidden" id="geminiKey" value="AIzaSyDv0Il8qdVq8csA2GmF7CO5QcfOP4Td6uY" />
+    <input type="hidden" id="geminiKey" value="AIzaSyCVbilOoV1rcE3Zsrb1pok-F41zsxZ_HV8" />
   </div>
 
     <div class="card">
@@ -432,7 +432,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
   const PROXY_URL = 'https://shopee-api-proxy.felipeoliveira2.workers.dev';
-  const GEMINI_KEY_DEFAULT = 'AIzaSyDv0Il8qdVq8csA2GmF7CO5QcfOP4Td6uY';
+  const GEMINI_KEY_DEFAULT = 'AIzaSyCVbilOoV1rcE3Zsrb1pok-F41zsxZ_HV8';
   let resultados = [];
   let tabAtiva = 'planilha';
   let dadosPlanilha = [];
@@ -781,38 +781,18 @@
     document.getElementById('cta_auto_' + id).style.display = 'none';
     try {
       const prompt = 'Crie um CTA curto (m\u00e1ximo 10 palavras) irresist\u00edvel com emojis para divulgar este produto da Shopee para o p\u00fablico feminino brasileiro. Produto: "' + nomeProduto + '". Responda APENAS com o CTA, sem aspas.';
-      // Retry com backoff para erro 429 (rate limit)
-      const MODELS = [
-        'gemini-2.0-flash',
-        'gemini-1.5-flash',
-        'gemini-1.5-flash-8b',
-      ];
-      let cta = null;
-      for (let m = 0; m < MODELS.length && !cta; m++) {
-        for (let attempt = 1; attempt <= 3 && !cta; attempt++) {
-          try {
-            if (attempt > 1) {
-              aiEl.textContent = 'Aguardando... tentativa ' + attempt;
-              await new Promise(r => setTimeout(r, attempt * 3000));
-            }
-            const resp = await fetch(
-              'https://generativelanguage.googleapis.com/v1beta/models/' + MODELS[m] + ':generateContent?key=' + key,
-              { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
-            );
-            if (resp.status === 429) {
-              aiEl.textContent = 'Limite atingido, tentando outro modelo...';
-              break; // Tenta o proximo modelo
-            }
-            if (!resp.ok) throw new Error('HTTP ' + resp.status);
-            const data = await resp.json();
-            cta = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-          } catch(retryErr) {
-            if (attempt === 3) throw retryErr;
-          }
-        }
+      const resp = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=' + key,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
+      );
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error('Gemini HTTP ' + resp.status + ': ' + (errData?.error?.message || ''));
       }
-      if (!cta) throw new Error('Limite de requisições atingido. Tente novamente em 1 minuto.');
+      const data = await resp.json();
+      const cta  = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      if (!cta) throw new Error('Resposta vazia da IA');
       aiEl.textContent    = cta;
       aiEl.style.color    = 'var(--text)';
       aiEl.style.fontStyle = 'normal';
