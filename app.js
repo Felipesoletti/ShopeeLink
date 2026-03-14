@@ -18,9 +18,12 @@
       if (nav) nav.classList.toggle('active', p === page);
       if (pg)  pg.classList.toggle('active',  p === page);
     });
-    // Mostrar/ocultar nav de exportar
     const navExp = document.getElementById('nav-exportar');
     if (navExp) navExp.style.display = carrinho.length > 0 ? '' : 'none';
+    // Auto-carregar cupons na primeira visita
+    if (page === 'cupons' && !cuponsAtivos.hasLoaded) {
+      buscarCupons();
+    }
   }
 
   function abrirPaginaExportar() {
