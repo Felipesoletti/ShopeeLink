@@ -321,9 +321,9 @@
         <div>
           <label>Ordenar por</label>
           <select id="sortType">
-            <option value="2">💰 Maior Comissão</option>
-            <option value="1">🔥 Mais Vendidos</option>
-            <option value="3">💲 Menor Preço</option>
+            <option value="5">&#128176; Maior Comiss&#227;o</option>
+            <option value="2">&#128293; Mais Vendidos</option>
+            <option value="4">&#128178; Menor Pre&#231;o</option>
           </select>
         </div>
         <div>
@@ -334,17 +334,24 @@
             <option value="60">60 produtos</option>
           </select>
         </div>
-        <div style="display:flex;flex-direction:column;justify-content:flex-end">
-          <label style="margin-bottom:11px">Envio Nacional</label>
+        <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:10px">
           <div class="toggle-row" style="margin:0">
             <label class="toggle">
               <input type="checkbox" id="filtroNacional" />
               <span class="toggle-slider"></span>
             </label>
-            <span class="toggle-label" style="font-size:12px;color:var(--muted)">Frete Grátisionais 🇧🇷</span>
+            <span class="toggle-label" style="font-size:12px;color:var(--text)">&#128230; Frete Gr&#225;tis</span>
+          </div>
+          <div class="toggle-row" style="margin:0">
+            <label class="toggle">
+              <input type="checkbox" id="filtroMall" />
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label" style="font-size:12px;color:var(--text)">&#127963; Vendedor Nacional (Mall)</span>
           </div>
         </div>
       </div>
+
 
       <div class="alert error" id="alertOfertasError">⚠️ <span id="alertOfertasMsg"></span></div>
       <div id="ofertasContainer">
@@ -599,7 +606,8 @@
     document.getElementById('alertOfertasError').classList.remove('show');
 
     const baseKeyword = document.getElementById('searchInput').value.trim() || 'feminino';
-    const freteGratis = document.getElementById('filtroNacional').checked;
+    const freteGratis  = document.getElementById('filtroNacional').checked;
+    const filtroMall   = document.getElementById('filtroMall').checked;
     const keyword  = freteGratis ? baseKeyword + ' frete gratis' : baseKeyword;
     const sortType = parseInt(document.getElementById('sortType').value);
     const limit    = parseInt(document.getElementById('limitOfertas').value);
@@ -627,13 +635,14 @@
             sortType: ${sortType},
             page: ${page},
             limit: ${thisLimit}
+            ${filtroMall ? ', shopType: [1]' : ''}
           ) {
             nodes {
               itemId shopId productName
               priceMin priceMax commissionRate priceDiscountRate
               itemId shopId productName
               priceMin priceMax commissionRate priceDiscountRate
-              imageUrl offerLink
+              imageUrl offerLink shopName shopType
             }
             pageInfo { hasNextPage }
           }
@@ -699,8 +708,9 @@
             </div>
             <div class="product-meta">
               ${comissao ? `<span class="product-commission">&#128176; ${comissao}% comiss&#227;o</span>` : ''}
-              ${isNac    ? `<span class="product-national">&#127463;&#127479; Nacional</span>` : ''}
+              ${p.shopType === 1 ? `<span class="product-national">&#127963; Mall</span>` : ''}
             </div>
+            ${p.shopName ? `<div style="font-size:11px;color:var(--muted);margin-bottom:8px">&#127978; ${p.shopName}</div>` : ''}
             <div class="product-actions" onclick="event.stopPropagation()">
               <a href="${link}" target="_blank" class="product-btn product-btn-main">Ver produto</a>
             </div>
