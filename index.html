@@ -2,6 +2,9 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="pragma" content="no-cache" />
+  <meta http-equiv="expires" content="0" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Shopee Link Afiliado</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -534,6 +537,7 @@
     const sig = await sha256(`${appId}${timestamp}${body}${secret}`);
     const resp = await fetch(PROXY_URL, {
       method: 'POST',
+      mode: 'cors',
       headers: { 'Content-Type': 'application/json', 'Authorization': `SHA256 Credential=${appId}, Timestamp=${timestamp}, Signature=${sig}` },
       body
     });
@@ -687,6 +691,116 @@
     if (mn && mx)       lbl.textContent = 'R$ ' + mn + ' — R$ ' + mx;
     else if (mn && !mx) lbl.textContent = 'A partir de R$ ' + mn;
     else if (!mn && mx) lbl.textContent = 'Até R$ ' + mx;
+  }
+
+
+  // ══ CTA ══
+  const CTA_DB = [
+    {keys:['cafe','caneca','xicara','moka','capsula'],
+     tpl:['A mais linda para o cantinho do caf\u00e9 \u2728\u2615','Para quem ama um caf\u00e9 bem feito \u2615\u2728','Seu ritual do caf\u00e9 merece isso \u2728']},
+    {keys:['maquiagem','base','batom','blush','sombra','lip','glitter'],
+     tpl:['O look perfeito come\u00e7a aqui \ud83d\udc84\u2728','Sua make vai subir de n\u00edvel \ud83d\udc84\ud83d\udca5','Para quem ama uma make impec\u00e1vel \u2728']},
+    {keys:['skincare','creme','serum','hidratante','esfoliante'],
+     tpl:['Sua pele vai agradecer muito \ud83c\udf3f\u2728','O skincare que voc\u00ea merecia \ud83c\udf3f\u2728','Pele hidratada e linda \u2728']},
+    {keys:['perfume','body splash','fragr'],
+     tpl:['O aroma que vai te marcar \ud83c\udf38\u2728','Cheirosa o dia todo \ud83c\udf38\ud83d\udc95','Seu novo perfume favorito \ud83c\udf38']},
+    {keys:['bolsa','mochila','carteira','necessaire','bag'],
+     tpl:['O acess\u00f3rio que faltava no seu look \ud83d\udc5c\u2728','Pr\u00e1tica e estilosa \ud83d\udc5c\ud83d\udca5']},
+    {keys:['vestido','calca','blusa','cropped','saia','conjunto','jaqueta'],
+     tpl:['O look que voc\u00ea estava esperando \ud83d\udc57\u2728','Para arrasar com estilo \ud83d\udc57\ud83d\udca5']},
+    {keys:['calcinha','sutia','lingerie','pijama'],
+     tpl:['Conforto e delicadeza juntos \ud83d\udc95\u2728','Para se sentir linda \ud83d\udc95\u2728']},
+    {keys:['cabelo','shampoo','condicionador','capilar','secador'],
+     tpl:['Para o cabelo dos sonhos \u2728','Seu cabelo vai amar isso \ud83d\udc87\u2640\ufe0f\u2665\ufe0f']},
+    {keys:['colar','pulseira','brinco','anel','joia','biju'],
+     tpl:['O detalhe que completa tudo \ud83d\udc8d\u2728','Acess\u00f3rio lindo para arrasar \ud83d\udc8d\ud83d\udca5']},
+    {keys:['organiz','decor','casa','cozinha','quarto'],
+     tpl:['A casa ainda mais linda \ud83c\udfe1\u2728','Organize com estilo e praticidade \ud83c\udfe1\ud83d\udca5']},
+  ];
+
+  function gerarCtaAuto(nome) {
+    const n = (nome || '').toLowerCase();
+    for (const cat of CTA_DB) {
+      if (cat.keys.some(k => n.includes(k))) {
+        return cat.tpl[Math.floor(Math.random() * cat.tpl.length)];
+      }
+    }
+    const g = [
+      'Um achadinho que voc\u00ea vai amar \u2728\ud83d\udc95',
+      'Oferta imperd\u00edvel! \u2728\ud83d\udca5',
+      'Esse voc\u00ea precisa ver! \u2728\ud83d\udc40',
+      'Corre que \u00e9 por tempo limitado \u2728\ud83d\udd25',
+    ];
+    return g[Math.floor(Math.random() * g.length)];
+  }
+
+  function switchCtaTab(id, tab, btn) {
+    btn.closest('.cta-tabs').querySelectorAll('.cta-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('cta_auto_' + id).style.display = tab === 'auto' ? '' : 'none';
+    document.getElementById('cta_ai_'   + id).style.display = tab === 'ai'   ? '' : 'none';
+  }
+
+  function regenerarCtaAuto(id, nome) {
+    const el = document.getElementById('cta_auto_' + id);
+    if (el) el.textContent = gerarCtaAuto(nome);
+  }
+
+  function copiarCta(id) {
+    const a = document.getElementById('cta_auto_' + id);
+    const b = document.getElementById('cta_ai_'   + id);
+    const isAi = b && b.style.display !== 'none';
+    const txt  = (isAi ? b : a)?.textContent?.trim();
+    if (!txt || txt.includes('Clique') || txt.includes('Gerando')) return;
+    navigator.clipboard.writeText(txt).then(() => {
+      const box = (isAi ? b : a).closest('.cta-box');
+      const btn = box?.querySelector('.cta-btn');
+      if (btn) {
+        const orig = btn.textContent;
+        btn.textContent = '\u2713 Copiado!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+      }
+    });
+  }
+
+  async function gerarCtaGemini(id, nomeProduto) {
+    const key  = document.getElementById('geminiKey')?.value?.trim() || GEMINI_KEY_DEFAULT;
+    const btn  = document.getElementById('btn_ai_' + id);
+    const aiEl = document.getElementById('cta_ai_' + id);
+    if (!btn || !aiEl) return;
+    btn.disabled = true;
+    btn.textContent = '...';
+    aiEl.style.display    = '';
+    aiEl.style.color      = 'var(--muted)';
+    aiEl.style.fontStyle  = 'italic';
+    aiEl.textContent      = 'Gerando com IA...';
+    const tabs = btn.closest('.cta-box').querySelectorAll('.cta-tab');
+    tabs.forEach(t => t.classList.remove('active'));
+    tabs[1]?.classList.add('active');
+    document.getElementById('cta_auto_' + id).style.display = 'none';
+    try {
+      const prompt = 'Crie um CTA curto (m\u00e1ximo 10 palavras) irresist\u00edvel com emojis para divulgar este produto da Shopee para o p\u00fablico feminino brasileiro. Produto: "' + nomeProduto + '". Responda APENAS com o CTA, sem aspas.';
+      const resp = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + key,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
+      );
+      if (!resp.ok) throw new Error('Gemini HTTP ' + resp.status);
+      const data = await resp.json();
+      const cta  = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      if (!cta) throw new Error('Resposta vazia');
+      aiEl.textContent    = cta;
+      aiEl.style.color    = 'var(--text)';
+      aiEl.style.fontStyle = 'normal';
+    } catch(e) {
+      aiEl.textContent    = 'Erro: ' + e.message;
+      aiEl.style.color    = 'var(--error)';
+      aiEl.style.fontStyle = 'normal';
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = '\u2728 Gerar com IA';
+    }
   }
 
   async function buscarOfertas() {
