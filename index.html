@@ -5,8 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ShopeeLinks</title>
   <link rel="stylesheet" href="style.css" />
+  <script>
+    // Redireciona IMEDIATAMENTE antes de renderizar qualquer coisa
+    (function() {
+      var id = localStorage.getItem('shopee_appid');
+      var sk = localStorage.getItem('shopee_secret');
+      if (!id || !sk) {
+        // Redireciona para login.html no mesmo diretório
+        var path = window.location.pathname.replace(/[^/]*$/, '') + 'login.html';
+        window.location.replace(path);
+      }
+    })();
+  </script>
 </head>
-<body>
+<body style="visibility:hidden">
+
+<!-- Credenciais globais -->
+<input type="hidden" id="appId" />
+<input type="hidden" id="secretKey" />
+<input type="hidden" id="geminiKey" value="AIzaSyAh3X2gJnHRCpzd9mJwbWFMEHAUno4VbOk" />
 
 <div class="glow"></div>
 <div class="glow2"></div>
@@ -42,21 +59,8 @@
     <button class="main-nav-btn" id="btnLogout" onclick="fazerLogout()" style="display:none;margin-left:auto;color:var(--muted)">&#128275; Sair</button>
   </div>
 
-  <!-- ══ PÁGINA GERAR LINKS ══ -->
+  <!-- == PÁGINA GERAR LINKS == -->
   <div class="main-page active" id="page-links">
-        <!-- Credenciais (ocultas — gerenciadas via login.html) -->
-    <input type="hidden" id="appId" />
-    <input type="hidden" id="secretKey" />
-    <input type="hidden" id="geminiKey" value="AIzaSyAh3X2gJnHRCpzd9mJwbWFMEHAUno4VbOk" />
-
-      <div class="form-row">
-        <div><label>APP ID</label><input type="text" id="appId" placeholder="Ex: 18356560116" /></div>
-        <div><label>SECRET KEY</label><input type="password" id="secretKey" placeholder="Sua chave secreta" /></div>
-      </div>
-      <p class="hint">🔒 Suas credenciais ficam apenas no seu navegador e nunca são enviadas a terceiros.</p>
-    <input type="hidden" id="geminiKey" value="AIzaSyAh3X2gJnHRCpzd9mJwbWFMEHAUno4VbOk" />
-  </div>
-
     <div class="card">
       <div class="card-title">Links para Converter</div>
       <div class="tabs">
@@ -111,7 +115,6 @@
           <tbody id="resultsBody"></tbody></table>
         </div>
       </div>
-    </div>
   </div>
 
   <!-- ══ PÁGINA OFERTAS ══ -->
@@ -308,15 +311,13 @@
     var id = localStorage.getItem('shopee_appid');
     var sk = localStorage.getItem('shopee_secret');
     if (!id || !sk) {
-      window.location.href = 'login.html';
+      var path = window.location.pathname.replace(/[^/]*$/, '') + 'login.html';
+      window.location.replace(path);
       return;
     }
-    // Preencher appId e secretKey hidden
-    var appEl = document.getElementById('appId');
-    var skEl  = document.getElementById('secretKey');
-    if (appEl) appEl.value = id;
-    if (skEl)  skEl.value  = sk;
-    // Botão de logout
+    // Mostrar página (estava hidden para evitar flash)
+    document.body.style.visibility = 'visible';
+    // Mostrar botão logout
     var logoutBtn = document.getElementById('btnLogout');
     if (logoutBtn) logoutBtn.style.display = '';
   });
