@@ -713,10 +713,10 @@
             sortType: ${sortType},
             page: ${page},
             limit: ${thisLimit}
-            ${filtroMall ? ', shopType: [1]' : ''}
+            ${filtroMall ? ', isKeySeller: true' : ''}
           ) {
             nodes {
-              itemId shopId productName shopName shopType
+              itemId shopId productName shopName
               priceMin priceMax commissionRate priceDiscountRate
               imageUrl offerLink
             }
@@ -799,7 +799,7 @@
                 const valorComissao = (precoNum && pctNum) ? (precoNum * pctNum / 100).toFixed(2).replace('.',',') : null;
                 return `<span class="product-commission">&#128176; ${comissao}% ${valorComissao ? `<span style="color:#86efac">(R$&nbsp;${valorComissao})</span>` : ''}</span>`;
               })() : ''}
-              ${p.shopType === 1 ? `<span class="product-national">&#127963; Mall</span>` : ''}
+              ${filtroMall ? `<span class="product-national">&#127963; Key Seller</span>` : ''}
             </div>
             ${p.shopName ? `<div style="font-size:11px;color:var(--muted);margin-bottom:8px">&#127978; ${p.shopName}</div>` : ''}
             <div class="product-actions" onclick="event.stopPropagation()">
