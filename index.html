@@ -3,324 +3,130 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ShopeeLinks</title>
+  <title>ShopeeLinks — Login</title>
   <link rel="stylesheet" href="style.css" />
-  <script>
-    // Redireciona IMEDIATAMENTE antes de renderizar qualquer coisa
-    (function() {
-      var id = localStorage.getItem('shopee_appid');
-      var sk = localStorage.getItem('shopee_secret');
-      if (!id || !sk) {
-        // Redireciona para login.html no mesmo diretório
-        var path = window.location.pathname.replace(/[^/]*$/, '') + 'login.html';
-        window.location.replace(path);
-      }
-    })();
-  </script>
 </head>
-<body style="visibility:hidden">
-
-<!-- Credenciais globais -->
-<input type="hidden" id="appId" />
-<input type="hidden" id="secretKey" />
-<input type="hidden" id="geminiKey" value="AIzaSyAh3X2gJnHRCpzd9mJwbWFMEHAUno4VbOk" />
-
+<body>
 <div class="glow"></div>
 <div class="glow2"></div>
 
-<!-- CARRINHO FLUTUANTE -->
-<div class="cart-bar" id="cartBar">
-  <div class="cart-count" id="cartCount">0</div>
-  <div class="cart-info">
-    <div class="cart-info-title">Produtos selecionados</div>
-    <div class="cart-info-sub" id="cartSub">Clique em exportar para baixar a planilha</div>
-  </div>
-  <div class="cart-actions">
-    <button class="cart-btn cart-btn-clear" onclick="limparCarrinho()">🗑 Limpar</button>
-    <button class="cart-btn cart-btn-export" onclick="abrirPaginaExportar()">&#128196; Selecionar e Exportar</button>
+<div class="login-wrap">
+  <div class="login-card">
+
+    <div class="login-logo">
+      <div class="login-logo-icon">🛍</div>
+      <div class="login-logo-text">Shopee<span>Links</span></div>
+    </div>
+
+    <h2 class="login-title">Bem-vindo!</h2>
+    <p class="login-sub">Conecte suas credenciais da API de Afiliados Shopee para começar.</p>
+
+    <div>
+      <label>APP ID</label>
+      <input type="text" id="appId" placeholder="Ex: 18356560116" autocomplete="off" />
+    </div>
+
+    <div style="margin-top:14px">
+      <label>SECRET KEY</label>
+      <input type="password" id="secretKey" placeholder="Sua chave secreta" autocomplete="off" />
+    </div>
+
+    <p class="hint" style="margin-top:8px">
+      🔒 Credenciais salvas apenas no seu navegador. Encontre em
+      <a href="https://affiliate.shopee.com.br/open_api" target="_blank" style="color:var(--orange)">affiliate.shopee.com.br → Open API</a>
+    </p>
+
+    <div class="login-status" id="loginStatus"></div>
+
+    <button class="btn" id="btnLogin" onclick="fazerLogin()" style="margin-top:20px">
+      <div class="spinner" id="loginSpinner"></div>
+      <span class="btn-text" id="loginBtnText">Conectar e Entrar →</span>
+    </button>
+
   </div>
 </div>
 
-<div class="container">
-  <header>
-    <div class="logo">
-      <div class="logo-icon">🛍</div>
-      <div class="logo-text">Shopee<span>Links</span></div>
-    </div>
-    <h1>Afiliados Shopee<br><em>Tudo em um lugar</em></h1>
-    <p class="subtitle">Gere links de afiliado e busque as melhores ofertas para divulgar.</p>
-  </header>
-
-  <div class="main-nav">
-    <button class="main-nav-btn active" id="nav-links" onclick="switchPage('links')">🔗 Gerar Links</button>
-    <button class="main-nav-btn" id="nav-ofertas" onclick="switchPage('ofertas')">&#128293; Buscar Ofertas</button>
-    <button class="main-nav-btn" id="nav-cupons" onclick="switchPage('cupons')">&#127987; Cup&#245;ns</button>
-    <button class="main-nav-btn" id="nav-exportar" onclick="switchPage('exportar')" style="display:none">&#128196; Exportar</button>
-    <button class="main-nav-btn" id="btnLogout" onclick="fazerLogout()" style="display:none;margin-left:auto;color:var(--muted)">&#128275; Sair</button>
-  </div>
-
-  <!-- == PÁGINA GERAR LINKS == -->
-  <div class="main-page active" id="page-links">
-    <div class="card">
-      <div class="card-title">Links para Converter</div>
-      <div class="tabs">
-        <button class="tab active" id="tab-planilha" onclick="switchTab('planilha')">📊 Subir Planilha</button>
-        <button class="tab" id="tab-texto" onclick="switchTab('texto')">📋 Colar Links</button>
-      </div>
-      <div class="tab-panel active" id="panel-planilha">
-        <div class="upload-zone" id="uploadZone">
-          <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFile(this.files[0])" />
-          <div class="upload-icon">📂</div>
-          <div class="upload-title">Clique ou arraste sua planilha aqui</div>
-          <div class="upload-sub">Aceita .xlsx, .xls ou .csv</div>
-        </div>
-        <div class="file-preview" id="filePreview">
-          <div style="font-size:20px">📗</div>
-          <div class="file-preview-info">
-            <div class="file-preview-name" id="fileName">—</div>
-            <div class="file-preview-meta" id="fileMeta">—</div>
-          </div>
-          <button class="file-remove" onclick="removeFile()">✕</button>
-        </div>
-        <div class="col-config" id="colConfig">
-          <div class="col-config-title">⚙ Configurar colunas</div>
-          <div class="col-row">
-            <div><label>Coluna NOME</label><select id="colNome"></select></div>
-            <div><label>Coluna LINK</label><select id="colLink"></select></div>
-          </div>
-        </div>
-      </div>
-      <div class="tab-panel" id="panel-texto">
-        <label>Cole os links (um por linha)</label>
-        <textarea id="linksInput" placeholder="Nome do Produto,https://shopee.com.br/...&#10;Ou só os links:&#10;https://shopee.com.br/..."></textarea>
-        <p class="hint">📋 Formato: <code style="color:var(--orange)">Nome,https://...</code> ou apenas o link</p>
-      </div>
-      <div class="alert error" id="alertError">⚠️ <span id="alertMsg"></span></div>
-      <div class="alert info"  id="alertInfo">ℹ️ <span id="alertInfoMsg"></span></div>
-      <button class="btn" id="btnGerar" onclick="gerarLinks()">
-        <div class="spinner"></div><span class="btn-text">✦ Gerar Links de Afiliado</span>
-      </button>
-      <div class="progress-wrap" id="progressWrap">
-        <div class="progress-label"><span>Convertendo links...</span><span id="progressCount">0/0</span></div>
-        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
-        <div class="progress-log" id="progressLog"></div>
-      </div>
-      <div class="results-wrap" id="resultsWrap">
-        <div class="results-header">
-          <div class="results-count" id="resultsCount"></div>
-          <button class="btn btn-sm" onclick="downloadExcel()">⬇ Baixar Planilha</button>
-        </div>
-        <div class="table-wrap">
-          <table><thead><tr><th>#</th><th>Produto</th><th>Link Afiliado</th><th></th></tr></thead>
-          <tbody id="resultsBody"></tbody></table>
-        </div>
-      </div>
-  </div>
-
-  <!-- ══ PÁGINA OFERTAS ══ -->
-  <div class="main-page" id="page-ofertas">
-    <div class="card">
-      <div class="card-title">🔥 Melhores Ofertas — Público Feminino</div>
-
-      <!-- Categorias -->
-      <div class="badge-row" id="badgeRow">
-        <div class="badge active" onclick="selectCategoria(this,'feminino')">✨ Todos</div>
-        <div class="badge" onclick="selectCategoria(this,'maquiagem')">💄 Maquiagem</div>
-        <div class="badge" onclick="selectCategoria(this,'skincare')">🧴 Skincare</div>
-        <div class="badge" onclick="selectCategoria(this,'moda feminina')">👗 Moda</div>
-        <div class="badge" onclick="selectCategoria(this,'perfume feminino')">🌸 Perfume</div>
-        <div class="badge" onclick="selectCategoria(this,'bolsa feminina')">👜 Bolsas</div>
-        <div class="badge" onclick="selectCategoria(this,'bijuteria')">💍 Acessórios</div>
-        <div class="badge" onclick="selectCategoria(this,'calcinha')">👙 Lingerie</div>
-        <div class="badge" onclick="selectCategoria(this,'cabelo feminino')">💇 Cabelo</div>
-      </div>
-
-      <!-- Campo de busca (sem botão) -->
-      <div style="margin-bottom:14px">
-        <input type="text" id="searchInput" placeholder="Buscar produto feminino..."
-          onkeydown="if(event.key==='Enter')buscarOfertas()"
-          style="width:100%" />
-      </div>
-
-      <!-- Filtros: ordenar + quantidade + toggles -->
-      <div class="filter-grid" style="margin-bottom:14px">
-        <div>
-          <label>Ordenar por</label>
-          <select id="sortType">
-            <option value="5">&#128176; Maior Comiss&#227;o</option>
-            <option value="2">&#128293; Mais Vendidos</option>
-            <option value="4">&#128178; Menor Pre&#231;o</option>
-          </select>
-        </div>
-        <div>
-          <label>Quantidade</label>
-          <select id="limitOfertas">
-            <option value="20">20 produtos</option>
-            <option value="40">40 produtos</option>
-            <option value="60">60 produtos</option>
-          </select>
-        </div>
-        <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:10px">
-          <div class="toggle-row" style="margin:0">
-            <label class="toggle">
-              <input type="checkbox" id="filtroNacional" />
-              <span class="toggle-slider"></span>
-            </label>
-            <span class="toggle-label" style="font-size:12px;color:var(--text)">&#128230; Frete Gr&#225;tis</span>
-          </div>
-          <div class="toggle-row" style="margin:0">
-            <label class="toggle">
-              <input type="checkbox" id="filtroMall" />
-              <span class="toggle-slider"></span>
-            </label>
-            <span class="toggle-label" style="font-size:12px;color:var(--text)">&#127963; Vendedor Nacional (Mall)</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Faixa de preço + botão Buscar -->
-      <div style="display:flex;align-items:flex-end;gap:14px;margin-bottom:18px;flex-wrap:wrap">
-
-        <!-- Faixa de preço -->
-        <div style="flex:1;min-width:220px">
-          <p style="font-size:11px;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin:0 0 10px">Faixa de pre&#231;o</p>
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-            <div style="flex:1;background:var(--surface2);border-radius:10px;padding:10px 14px;border:1px solid var(--border)">
-              <p style="font-size:11px;color:var(--muted);margin:0 0 2px">M&#237;nimo</p>
-              <div style="display:flex;align-items:baseline;gap:3px">
-                <span style="font-size:12px;color:var(--muted)">R$</span>
-                <input type="number" id="precoMin" min="0" value="" placeholder="0"
-                  style="background:none;border:none;outline:none;font-size:18px;font-weight:700;color:var(--text);width:70px;padding:0;font-family:'Syne',sans-serif"
-                  oninput="atualizarBarraPreco()" />
-              </div>
-            </div>
-            <div style="width:14px;height:1px;background:var(--border);flex-shrink:0"></div>
-            <div style="flex:1;background:var(--surface2);border-radius:10px;padding:10px 14px;border:1px solid var(--border)">
-              <p style="font-size:11px;color:var(--muted);margin:0 0 2px">M&#225;ximo</p>
-              <div style="display:flex;align-items:baseline;gap:3px">
-                <span style="font-size:12px;color:var(--muted)">R$</span>
-                <input type="number" id="precoMax" min="0" value="" placeholder="&#8734;"
-                  style="background:none;border:none;outline:none;font-size:18px;font-weight:700;color:var(--text);width:70px;padding:0;font-family:'Syne',sans-serif"
-                  oninput="atualizarBarraPreco()" />
-              </div>
-            </div>
-          </div>
-          <div style="position:relative;height:3px;background:var(--border);border-radius:2px;margin:0 4px 6px">
-            <div id="barraPreco" style="position:absolute;height:100%;background:var(--orange);border-radius:2px;left:0%;right:0%"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span id="lblPreco" style="font-size:12px;color:var(--muted)">Qualquer pre&#231;o</span>
-            <button onclick="limparFiltroPreco()" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;font-family:'DM Sans',sans-serif">limpar</button>
-          </div>
-        </div>
-
-        <!-- Botão Buscar alinhado na base -->
-        <button class="btn btn-pink" style="width:auto;margin:0;padding:14px 28px;align-self:flex-end;white-space:nowrap" onclick="buscarOfertas()">
-          <div class="spinner" id="spinnerBusca"></div>
-          <span id="btnBuscaText">&#128269; Buscar ofertas</span>
-        </button>
-
-      </div>
-
-      </div>
-
-
-
-      <div class="alert error" id="alertOfertasError">⚠️ <span id="alertOfertasMsg"></span></div>
-      <div id="ofertasContainer">
-        <div class="empty-state">
-          <div class="icon">🛍</div>
-          <p>Selecione uma categoria ou busque um produto<br>para ver as melhores ofertas com comissão!</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ PÁGINA EXPORTAR ══ -->
-  <div class="main-page" id="page-exportar">
-    <div class="card">
-      <div class="card-title">&#128196; Configurar Exporta&#231;&#227;o</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:18px">Selecione as colunas que deseja incluir na planilha:</p>
-
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:24px">
-        <label class="col-toggle"><input type="checkbox" id="col_nome" checked /> <label for="col_nome">Nome do Produto</label></label>
-        <label class="col-toggle"><input type="checkbox" id="col_preco" checked /> <label for="col_preco">Pre&#231;o</label></label>
-        <label class="col-toggle"><input type="checkbox" id="col_comissao" checked /> <label for="col_comissao">Comiss&#227;o</label></label>
-        <label class="col-toggle"><input type="checkbox" id="col_link" checked /> <label for="col_link">Link Afiliado</label></label>
-        <label class="col-toggle"><input type="checkbox" id="col_cta" checked /> <label for="col_cta">CTA Personalizado</label></label>
-        <label class="col-toggle"><input type="checkbox" id="col_imagem" /> <label for="col_imagem">URL da Imagem</label></label>
-      </div>
-
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-        <span id="exportCount" style="font-size:13px;color:var(--muted)">0 produtos selecionados</span>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-sm" onclick="switchPage('ofertas')" style="margin:0">&#8592; Voltar</button>
-          <button class="btn" onclick="confirmarExportar()" style="width:auto;margin:0;padding:10px 24px">&#11015; Baixar Planilha</button>
-        </div>
-      </div>
-
-      <div class="table-wrap">
-        <table class="export-table">
-          <thead>
-            <tr>
-              <th style="width:40px"></th>
-              <th>Imagem</th>
-              <th>Nome</th>
-              <th>Pre&#231;o</th>
-              <th>Comiss&#227;o</th>
-              <th>CTA</th>
-            </tr>
-          </thead>
-          <tbody id="exportTableBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ PÁGINA CUPONS ══ -->
-  <div class="main-page" id="page-cupons">
-    <div class="card">
-      <div class="card-title">&#127987; Cup&#245;ns Ativos</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Clique em um cup&#245;m para copiar e divulgar para seu p&#250;blico.</p>
-      <div id="cuponsContainer">
-        <div style="text-align:center;padding:32px;color:var(--muted)">
-          <div style="font-size:36px;margin-bottom:12px">&#127987;</div>
-          <p style="font-size:14px">Clique em "Buscar Cup&#245;ns" para carregar as ofertas ativas.</p>
-          <button class="btn" onclick="buscarCupons()" style="width:auto;margin:16px auto 0;padding:12px 28px">Buscar Cup&#245;ns</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <footer>Feito para uso pessoal • Shopee Afiliados API</footer>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js"></script>
 <script>
-  function fazerLogout() {
-    if (confirm('Deseja sair e voltar para o login?')) {
-      localStorage.removeItem('shopee_appid');
-      localStorage.removeItem('shopee_secret');
-      window.location.href = 'login.html';
-    }
-  }
+  var PROXY_URL = 'https://shopee-api-proxy.felipeoliveira2.workers.dev';
 
-  // Verificar se está logado
+  // Se já tem credenciais salvas, preenche
   window.addEventListener('load', function() {
     var id = localStorage.getItem('shopee_appid');
     var sk = localStorage.getItem('shopee_secret');
-    if (!id || !sk) {
-      var path = window.location.pathname.replace(/[^/]*$/, '') + 'login.html';
-      window.location.replace(path);
+    if (id) document.getElementById('appId').value = id;
+    if (sk) document.getElementById('secretKey').value = sk;
+    // Enter para logar
+    [document.getElementById('appId'), document.getElementById('secretKey')].forEach(function(el) {
+      el.addEventListener('keydown', function(e) { if (e.key === 'Enter') fazerLogin(); });
+    });
+  });
+
+  function setStatus(type, msg) {
+    var el = document.getElementById('loginStatus');
+    el.className = 'login-status show ' + type;
+    el.textContent = msg;
+  }
+
+  async function sha256(msg) {
+    var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+    return Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2,'0'); }).join('');
+  }
+
+  async function fazerLogin() {
+    var appId  = document.getElementById('appId').value.trim();
+    var secret = document.getElementById('secretKey').value.trim();
+
+    if (!appId || !secret) {
+      setStatus('error', '⚠️ Preencha o App ID e a Secret Key.');
       return;
     }
-    // Mostrar página (estava hidden para evitar flash)
-    document.body.style.visibility = 'visible';
-    // Mostrar botão logout
-    var logoutBtn = document.getElementById('btnLogout');
-    if (logoutBtn) logoutBtn.style.display = '';
-  });
+
+    var btn = document.getElementById('btnLogin');
+    btn.disabled = true;
+    document.getElementById('loginSpinner').style.display = 'block';
+    document.getElementById('loginBtnText').style.display = 'none';
+    setStatus('loading', '⏳ Testando conexão com a API Shopee...');
+
+    try {
+      var timestamp = Math.floor(Date.now() / 1000);
+      var payload   = JSON.stringify({ query: '{ productOfferV2(keyword: "teste", limit: 1) { nodes { itemId } } }' });
+      var sig       = await sha256(appId + timestamp + payload + secret);
+      var resp      = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'SHA256 Credential=' + appId + ', Timestamp=' + timestamp + ', Signature=' + sig
+        },
+        body: payload
+      });
+
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      var data = await resp.json();
+
+      if (data.errors && data.errors.length) {
+        var code = data.errors[0].extensions && data.errors[0].extensions.code;
+        if (code === 10020) throw new Error('Credenciais inválidas. Verifique seu App ID e Secret Key.');
+        if (code === 10035) throw new Error('Sem acesso à API. Solicite acesso em affiliate.shopee.com.br');
+        throw new Error(data.errors[0].message);
+      }
+
+      // Sucesso — salva e redireciona
+      localStorage.setItem('shopee_appid', appId);
+      localStorage.setItem('shopee_secret', secret);
+      setStatus('success', '✅ Conectado com sucesso! Redirecionando...');
+
+      setTimeout(function() {
+        var path = window.location.pathname.replace(/[^/]*$/, '') + 'index.html';
+      window.location.href = path;
+      }, 1000);
+
+    } catch(e) {
+      setStatus('error', '❌ ' + e.message);
+      btn.disabled = false;
+      document.getElementById('loginSpinner').style.display = 'none';
+      document.getElementById('loginBtnText').style.display = 'block';
+    }
+  }
 </script>
 </body>
 </html>
