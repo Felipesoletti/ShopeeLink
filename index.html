@@ -532,9 +532,8 @@
   function abrirPaginaExportar() {
     if (!carrinho.length) return;
     // Atualizar CTA de cada item do carrinho a partir do DOM
-    carrinho.forEach(item => {
-      const cards = document.querySelectorAll('.product-card');
-      cards.forEach(card => {
+    carrinho.forEach(function(item) {
+      document.querySelectorAll('.product-card').forEach(function(card) {
         if (card.dataset.link === item.link && card.dataset.cta) {
           item.cta = card.dataset.cta;
         }
@@ -547,18 +546,24 @@
   function renderExportTable() {
     const tbody = document.getElementById('exportTableBody');
     if (!tbody) return;
-    document.getElementById('exportCount').textContent = carrinho.length + ' produto' + (carrinho.length !== 1 ? 's' : '') + ' selecionado' + (carrinho.length !== 1 ? 's' : '');
+    const n = carrinho.length;
+    document.getElementById('exportCount').textContent = n + ' produto' + (n !== 1 ? 's' : '') + ' selecionado' + (n !== 1 ? 's' : '');
     tbody.innerHTML = '';
-    carrinho.forEach((p, i) => {
+    carrinho.forEach(function(p, i) {
       const tr = document.createElement('tr');
-      tr.innerHTML = \`
-        <td><button onclick="removerDoCarrinho(\${i})" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:16px" title="Remover">&#10005;</button></td>
-        <td>\${p.imagem ? \`<img class="export-preview-img" src="\${p.imagem}" />\` : '<div class="export-preview-img" style="display:flex;align-items:center;justify-content:center">&#128717;</div>'}</td>
-        <td style="max-width:220px;font-size:13px">\${p.nome}</td>
-        <td style="font-size:13px;color:var(--orange);font-weight:700">\${p.preco}</td>
-        <td style="font-size:12px;color:var(--success)">\${p.comissao}</td>
-        <td><div class="cta-preview" title="\${p.cta||''}">\${p.cta || '<span style=\'color:var(--muted)\'>Sem CTA</span>'}</div></td>
-      \`;
+      const imgHtml = p.imagem
+        ? '<img class="export-preview-img" src="' + p.imagem + '" />'
+        : '<div class="export-preview-img" style="display:flex;align-items:center;justify-content:center">&#128717;</div>';
+      const ctaHtml = p.cta
+        ? '<div class="cta-preview" title="' + p.cta + '">' + p.cta + '</div>'
+        : '<span style="color:var(--muted);font-size:11px">Sem CTA</span>';
+      tr.innerHTML =
+        '<td><button onclick="removerDoCarrinho(' + i + ')" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:16px" title="Remover">&#10005;</button></td>' +
+        '<td>' + imgHtml + '</td>' +
+        '<td style="max-width:220px;font-size:13px">' + p.nome + '</td>' +
+        '<td style="font-size:13px;color:var(--orange);font-weight:700">' + p.preco + '</td>' +
+        '<td style="font-size:12px;color:var(--success)">' + p.comissao + '</td>' +
+        '<td>' + ctaHtml + '</td>';
       tbody.appendChild(tr);
     });
   }
@@ -636,7 +641,7 @@
       const formatDate = ts => ts ? new Date(ts*1000).toLocaleDateString('pt-BR') : '';
       container.innerHTML = \`<div class="cupom-grid" id="cupomGrid"></div>\`;
       const grid = document.getElementById('cupomGrid');
-      nodes.forEach(c => {
+      nodes.forEach(function(node) { {
         const pct = toComissaoPct(c.commissionRate);
         const validade = c.periodEndTime ? 'V\u00e1lido at\u00e9 ' + formatDate(c.periodEndTime) : '';
         const div = document.createElement('div');
