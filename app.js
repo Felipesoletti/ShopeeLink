@@ -4,6 +4,15 @@
 
 
   const PROXY_URL = 'https://shopee-api-proxy.felipeoliveira2.workers.dev';
+  // Helper: sempre lê credenciais do localStorage (nunca dos inputs)
+  function getCredentials() {
+    return {
+      appId:  localStorage.getItem('shopee_appid')  || '',
+      secret: localStorage.getItem('shopee_secret') || ''
+    };
+  }
+
+
   const GEMINI_KEY_DEFAULT = 'AIzaSyAh3X2gJnHRCpzd9mJwbWFMEHAUno4VbOk';
   let resultados = [];
   let tabAtiva = 'planilha';
@@ -116,9 +125,8 @@
   }
 
   async function buscarCupons() {
-    var appId  = document.getElementById('appId').value.trim();
-    var secret = document.getElementById('secretKey').value.trim();
-    if (!appId || !secret) { alert('Sem credenciais. Fa\u00e7a login novamente.'); return; }
+    var { appId, secret } = getCredentials();
+    if (!appId || !secret) { window.location.href = 'login.html'; return; }
 
     var container = document.getElementById('cuponsContainer');
     container.innerHTML = '<div class="empty-state"><div style="font-size:32px">&#9203;</div><p>Buscando ofertas oficiais da Shopee...</p></div>';
@@ -359,8 +367,7 @@
   function setProgress(a, t) { document.getElementById('progressFill').style.width = Math.round((a/t)*100)+'%'; document.getElementById('progressCount').textContent = `${a}/${t}`; }
 
   async function gerarLinks() {
-    const appId = document.getElementById('appId').value.trim();
-    const secret = document.getElementById('secretKey').value.trim();
+    const { appId, secret } = getCredentials();
     showAlert(null,'');
     if (!appId || !secret) return showAlert('error','Informe o App ID e a Secret Key.');
     const itens = coletarItens();
@@ -608,11 +615,10 @@
   }
 
   async function buscarOfertas() {
-    const appId  = document.getElementById('appId').value.trim();
-    const secret = document.getElementById('secretKey').value.trim();
+    const { appId, secret } = getCredentials();
     if (!appId || !secret) {
       document.getElementById('alertOfertasError').classList.add('show');
-      document.getElementById('alertOfertasMsg').textContent = 'Informe o App ID e a Secret Key na aba "Gerar Links".';
+      document.getElementById('alertOfertasMsg').textContent = 'Fa\u00e7a login novamente.';
       return;
     }
     document.getElementById('alertOfertasError').classList.remove('show');
@@ -854,13 +860,10 @@
 
   // ══ Salvar credenciais ══
   window.addEventListener('load', () => {
-    const id = localStorage.getItem('shopee_appid');
-    const sk = localStorage.getItem('shopee_secret');
-    if (id) document.getElementById('appId').value = id;
-    if (sk) document.getElementById('secretKey').value = sk;
+    // Credenciais lidas via getCredentials() direto do localStorage
     const gk = localStorage.getItem('gemini_key') || GEMINI_KEY_DEFAULT;
-    if (document.getElementById('geminiKey')) document.getElementById('geminiKey').value = gk;
-    if (document.getElementById('geminiKey')) document.getElementById('geminiKey').addEventListener('change', e => localStorage.setItem('gemini_key', e.target.value));
-    document.getElementById('appId').addEventListener('change', e => localStorage.setItem('shopee_appid', e.target.value));
-    document.getElementById('secretKey').addEventListener('change', e => localStorage.setItem('shopee_secret', e.target.value));
+    if (document.getElementById('geminiKey')) {
+      document.getElementById('geminiKey').value = gk;
+      document.getElementById('geminiKey').addEventListener('change', e => localStorage.setItem('gemini_key', e.target.value));
+    }
   });
