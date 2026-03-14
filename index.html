@@ -368,8 +368,7 @@
   async function gerarLinkAfiliado(appId, secret, linkOriginal) {
     const timestamp = Math.floor(Date.now() / 1000);
     const payload = {
-      query: `mutation generateShortLink($input: GenerateShortLinkInput!) { generateShortLink(input: $input) { shortLink originLink } }`,
-      variables: { input: { originLink: linkOriginal, subIds: [] } }
+      query: `mutation { generateShortLink(input: { originUrl: "${linkOriginal}", subIds: [] }) { shortLink } }`
     };
     const body = JSON.stringify(payload);
     const sig = await sha256(`${appId}${timestamp}${body}${secret}`);
