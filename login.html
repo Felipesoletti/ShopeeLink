@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopeeLinks — Login</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="glow"></div>
+<div class="glow2"></div>
+
+<div class="login-wrap">
+  <div class="login-card">
+
+    <div class="login-logo">
+      <div class="login-logo-icon">🛍</div>
+      <div class="login-logo-text">Shopee<span>Links</span></div>
+    </div>
+
+    <h2 class="login-title">Bem-vindo!</h2>
+    <p class="login-sub">Conecte suas credenciais da API de Afiliados Shopee para começar.</p>
+
+    <div>
+      <label>APP ID</label>
+      <input type="text" id="appId" placeholder="Ex: 18356560116" autocomplete="off" />
+    </div>
+
+    <div style="margin-top:14px">
+      <label>SECRET KEY</label>
+      <input type="password" id="secretKey" placeholder="Sua chave secreta" autocomplete="off" />
+    </div>
+
+    <p class="hint" style="margin-top:8px">
+      🔒 Credenciais salvas apenas no seu navegador. Encontre em
+      <a href="https://affiliate.shopee.com.br/open_api" target="_blank" style="color:var(--orange)">affiliate.shopee.com.br → Open API</a>
+    </p>
+
+    <div class="login-status" id="loginStatus"></div>
+
+    <button class="btn" id="btnLogin" onclick="fazerLogin()" style="margin-top:20px">
+      <div class="spinner" id="loginSpinner"></div>
+      <span class="btn-text" id="loginBtnText">Conectar e Entrar →</span>
+    </button>
+
+  </div>
+</div>
+
+<script>
+  var PROXY_URL = 'https://shopee-api-proxy.felipeoliveira2.workers.dev';
+
+  // Se já tem credenciais salvas, preenche
+  window.addEventListener('load', function() {
+    var id = localStorage.getItem('shopee_appid');
+    var sk = localStorage.getItem('shopee_secret');
+    if (id) document.getElementById('appId').value = id;
+    if (sk) document.getElementById('secretKey').value = sk;
+    // Enter para logar
+    [document.getElementById('appId'), document.getElementById('secretKey')].forEach(function(el) {
+      el.addEventListener('keydown', function(e) { if (e.key === 'Enter') fazerLogin(); });
+    });
+  });
+
+  function setStatus(type, msg) {
+    var el = document.getElementById('loginStatus');
+    el.className = 'login-status show ' + type;
+    el.textContent = msg;
+  }
+
+  async function sha256(msg) {
+    var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+    return Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2,'0'); }).join('');
+  }
+
+  async function fazerLogin() {
+    var appId  = document.getElementById('appId').value.trim();
+    var secret = document.getElementById('secretKey').value.trim();
+
+    if (!appId || !secret) {
+      setStatus('error', '⚠️ Preencha o App ID e a Secret Key.');
+      return;
+    }
+
+    var btn = document.getElementById('btnLogin');
+    btn.disabled = true;
+    document.getElementById('loginSpinner').style.display = 'block';
+    document.getElementById('loginBtnText').style.display = 'none';
+    setStatus('loading', '⏳ Testando conexão com a API Shopee...');
+
+    try {
+      var timestamp = Math.floor(Date.now() / 1000);
+      var payload   = JSON.stringify({ query: '{ productOfferV2(keyword: "teste", limit: 1) { nodes { itemId } } }' });
+      var sig       = await sha256(appId + timestamp + payload + secret);
+      var resp      = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'SHA256 Credential=' + appId + ', Timestamp=' + timestamp + ', Signature=' + sig
+        },
+        body: payload
+      });
+
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      var data = await resp.json();
+
+      if (data.errors && data.errors.length) {
+        var code = data.errors[0].extensions && data.errors[0].extensions.code;
+        if (code === 10020) throw new Error('Credenciais inválidas. Verifique seu App ID e Secret Key.');
+        if (code === 10035) throw new Error('Sem acesso à API. Solicite acesso em affiliate.shopee.com.br');
+        throw new Error(data.errors[0].message);
+      }
+
+      // Sucesso — salva e redireciona
+      localStorage.setItem('shopee_appid', appId);
+      localStorage.setItem('shopee_secret', secret);
+      setStatus('success', '✅ Conectado com sucesso! Redirecionando...');
+
+      setTimeout(function() {
+        window.location.href = 'index.html';
+      }, 1000);
+
+    } catch(e) {
+      setStatus('error', '❌ ' + e.message);
+      btn.disabled = false;
+      document.getElementById('loginSpinner').style.display = 'none';
+      document.getElementById('loginBtnText').style.display = 'block';
+    }
+  }
+</script>
+</body>
+</html>
