@@ -11,8 +11,9 @@
       var id = localStorage.getItem('shopee_appid');
       var sk = localStorage.getItem('shopee_secret');
       if (!id || !sk) {
-        var base = window.location.href.replace(/\/[^/]*$/, '/');
-        window.location.replace(base + 'login.html');
+        // Redireciona para login.html no mesmo diretório
+        var path = window.location.pathname.replace(/[^/]*$/, '') + 'login.html';
+        window.location.replace(path);
       }
     })();
   </script>
@@ -310,16 +311,13 @@
     var id = localStorage.getItem('shopee_appid');
     var sk = localStorage.getItem('shopee_secret');
     if (!id || !sk) {
-      window.location.href = 'login.html';
+      var path = window.location.pathname.replace(/[^/]*$/, '') + 'login.html';
+      window.location.replace(path);
       return;
     }
-    // Preencher appId e secretKey hidden
+    // Mostrar página (estava hidden para evitar flash)
     document.body.style.visibility = 'visible';
-    var appEl = document.getElementById('appId');
-    var skEl  = document.getElementById('secretKey');
-    if (appEl) appEl.value = id;
-    if (skEl)  skEl.value  = sk;
-    // Botão de logout
+    // Mostrar botão logout
     var logoutBtn = document.getElementById('btnLogout');
     if (logoutBtn) logoutBtn.style.display = '';
   });
