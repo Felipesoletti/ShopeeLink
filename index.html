@@ -782,7 +782,7 @@
     try {
       const prompt = 'Crie um CTA curto (m\u00e1ximo 10 palavras) irresist\u00edvel com emojis para divulgar este produto da Shopee para o p\u00fablico feminino brasileiro. Produto: "' + nomeProduto + '". Responda APENAS com o CTA, sem aspas.';
       const resp = await fetch(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + key,
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key,
         { method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
       );
